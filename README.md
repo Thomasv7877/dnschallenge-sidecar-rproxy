@@ -87,6 +87,7 @@ Once the local image is pushed to ACR and the Azure file shares are present we c
 * *certbot* and *rproxy_certbot*: image tag refers to the ACR image.  
 
 At the bottom the azure file shares are declared as volumes.  
+
 Place `cloudflare.ini` as well as `https_test.conf` in the 'webcfgs' Azure file share. The latter needs to be adapted.
 
 [https_prod.conf](nginx_certbot_local/nginx/https_prod.conf)  
@@ -156,6 +157,7 @@ www.mydomain.com {
 * *caddy* container: Build is replaced by the image tag, which points to the previously pushed ACR image. Volumes are functionally the same as offline counterparts, just in Azure file shares.  
 
 Just like with the ngix/certbot example two Azure shares are used and so need to be declared at the bottom.
+
 Place local `Caddyfile` in 'caddyfile' Azure share.
 
 ### Cloudflare:
@@ -185,5 +187,5 @@ docker compose up
 
 # TODO
 
-meer info cloudflare api (rechten)
-manueel ophalen via certbot cmd? test arg toevoegen, dig cmd ter test txt record toevoegen?
+meer info cloudflare api (rechten), print screens?  
+manueel ophalen via certbot cmd toevoegen? test arg toevoegen certbot cmd? dig cmd ter test txt record toevoegen?
