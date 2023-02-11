@@ -3,16 +3,16 @@
 These are a couple of examples for making an ACI setup supporting SSL and custom domains, using the sidecar principle.  
 The first example uses Nginx for reverse proxy and Certbot for handling the certificates.  
 The second uses Caddy for reverse proxy and automatic handling (renewal) of certificates.  
-As we are focussing on ACI and don't have a fixed IP address available DNS-01 challenge will be uses to get the certificates from Letsencrypt. An overview of challenge types can be found [here](https://letsencrypt.org/docs/challenge-types/).    
+As we are focussing on ACI and don't have a fixed IP address available DNS-01 challenge will be used to get the certificates from Letsencrypt. An overview of challenge types can be found [here](https://letsencrypt.org/docs/challenge-types/).    
 
 Let's look at the (container) hosting options in Azure:
 
 - **Option level 1**: VM vs container
 1. Ubuntu VM provides a fixed IP, for which we can add an A record in our VPS, for certificates we could install Certbot on the VM itself.
 2. Azure container:
-    - **Option level 2**: Choosing betwoon service to host the containers (Azure app service, Azure Container Instance, Azure container apps, Azure Kubernetes service), higher tiers have scalability, ease of setup etc. We default to ACI (most generic, cheapest).
+    - **Option level 2**: Choosing between service to host the containers (Azure app service, Azure Container Instance, Azure container apps, Azure Kubernetes service), higher tiers have scalability, ease of setup etc. We default to ACI (most generic, cheapest). Full comparison [here](https://learn.microsoft.com/en-us/azure/container-apps/compare-options#container-option-comparisons)
     1. Azure container instance (ACI)
-        - **option level 3**: custom domain how?
+        - **Option level 3**: custom domain how?
         1. Via Azure resource config dashboard (ssl option) -> Not possible in case of ACI (where it is in Azure app service for example)
         2. ACI in virtual network, SSL is configured on the app gateway.
         3. Sidecar container
@@ -56,7 +56,7 @@ The declared volumes are purely for testing but are functionally set up the same
 * Common: they have a common share for certificates, Certbot will place them, Nginx will read them.
 
 [(nginx) Dockerfile](nginx_certbot_local/df_nginx/Dockerfile)  
-The default nginx image will be adpted to restart on a daily basis (via cron) in case the certificate got renewed though the certbot container.  
+The default nginx image will be adapted to restart on a daily basis (via cron) in case the certificate got renewed though the certbot container.  
 
 [nginx-entrypoint.sh](nginx_certbot_local/df_nginx/nginx-entrypoint.sh)  
 The default nginx startup command has been replaced with a loop that will first validate the existance of certificate files, only then will Nginx be allowed to start.  
@@ -75,8 +75,8 @@ Get the certificate from Letsencrypt using automatic DNS challenge with the help
 ```bash
 certbot certonly --dns-cloudflare --dns-cloudflare-credentials $ini_path/cloudflare.ini -d www.mydomain.com --test-cert --email mail@mail.com --non-interactive --agree-tos --dns-cloudflare-propagation-seconds 20
 ```
-Moves the certificates to the volume.  
-Runs an infinite while loop that will do cerificate renewal if necessary.  
+Moves the certificates to the volume. For this a function is declared that will read the source of the symlinks found under `etc/letsencrypt/live/www.mydomain.com`.  
+Runs an infinite while loop that will do cerificate renewal if necessary, based on certificate file age, no unnecessazy calls are made.
 
 ### Azure
 
@@ -87,6 +87,23 @@ Once the local image is pushed to ACR and the Azure file shares are present we c
 * *certbot* and *rproxy_certbot*: image tag refers to the ACR image.  
 
 At the bottom the azure file shares are declared as volumes.  
+Place `cloudflare.ini` as well as `https_test.conf` in the 'webcfgs' Azure file share. The latter needs to be adapted.
+
+[https_prod.conf](nginx_certbot_local/nginx/https_prod.conf)  
+In the server configs for both http as https:
+```
+location / {
+        proxy_pass http://phpmyadmin:81;
+    }
+```
+Optional, for redirecting http to https, replace the http config with:
+```
+server {
+  listen 80;
+  server_name mydomain.com www.mydomain.com;
+  return 301 https://$host$request_uri;
+}
+```
 
 ## build / deploy:
 
@@ -122,7 +139,7 @@ A custom Caddy image must be made to allow Cloudflare API support. [Source](gith
 
 [Caddyfile](caddy_local/cfile/Caddyfile)  
 Caddy config file, has proxying rules for custom domain. **Edit domain and Cloudflare token.**
-```json
+```
 ..
 www.mydomain.com {
 	reverse_proxy phpmyadmin:81
@@ -139,6 +156,16 @@ www.mydomain.com {
 * *caddy* container: Build is replaced by the image tag, which points to the previously pushed ACR image. Volumes are functionally the same as offline counterparts, just in Azure file shares.  
 
 Just like with the ngix/certbot example two Azure shares are used and so need to be declared at the bottom.
+Place local `Caddyfile` in 'caddyfile' Azure share.
+
+### Cloudflare:
+
+API token must have following permissions, otherwise the fetch through Caddy will fail  
+* ZONE read
+* DNS edit
+
+Put security in CLoudflare at highest level, otherwise signed certificates are ignored.  
+ssl/tls > encryption mode: full(strict)
 
 ## build / deploy:
 
@@ -155,3 +182,8 @@ docker context use myACIcontext
 docker compose up
 # validate -> az container [attach | logs | show] --resource-group myresourcegroup --name azcontainername
 ```
+
+# TODO
+
+meer info cloudflare api (rechten)
+manueel ophalen via certbot cmd? test arg toevoegen, dig cmd ter test txt record toevoegen?
