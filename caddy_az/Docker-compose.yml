@@ -1,0 +1,32 @@
+version: '3.1'
+services:
+
+  phpmyadmin:
+    image: phpmyadmin
+    environment:
+      APACHE_PORT: 81
+    ports:
+      - 81:81
+
+  caddy:
+    container_name: caddy
+    domainname: caddypoc # needs to be declared te receive azure domain name, is used in vps cname record.
+    image: myregistry.azurecr.io/caddy  
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - caddydata:/data
+      - caddyfile:/etc/caddy
+
+volumes:
+  caddydata:
+    driver: azure_file
+    driver_opts:
+      share_name: caddydata
+      storage_account_name: mystorageaccount
+  caddyfile:
+    driver: azure_file
+    driver_opts:
+      share_name: caddyfile
+      storage_account_name: mystorageaccount

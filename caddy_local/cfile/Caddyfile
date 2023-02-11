@@ -1,0 +1,13 @@
+mydomain.com {
+	reverse_proxy phpmyadmin:81
+	tls {
+		dns cloudflare [token]
+	}
+}
+
+www.mydomain.com {
+	reverse_proxy phpmyadmin:81
+	tls {
+		dns cloudflare [token]
+	}
+}

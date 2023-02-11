@@ -1,0 +1,41 @@
+version: '3.1'
+services:
+
+  phpmyadmin:
+    image: phpmyadmin
+    domainname: nginxpoc
+    environment:
+      APACHE_PORT: 81
+    ports:
+      - 81:81
+
+  certbot:
+    container_name: certbot-az
+    image: myregistry.azurecr.io/certbot_az
+    volumes:
+      - webcfgs:/etc/cloudflare_api
+      - certs:/etc/certs 
+
+  rproxy_certbot:
+    container_name: nginx
+    image: myregistry.azurecr.io/rproxy_certbot
+    volumes:
+      - webcfgs:/etc/nginx/conf.d
+      - certs:/etc/certs
+    ports:
+    - 80:80
+    - 443:443
+    depends_on:
+      - certbot
+      
+volumes:
+  certs:
+    driver: azure_file
+    driver_opts:
+      share_name: certs
+      storage_account_name: mystorageaccount
+  webcfgs:
+    driver: azure_file
+    driver_opts:
+      share_name: webcfgs
+      storage_account_name: mystorageaccount

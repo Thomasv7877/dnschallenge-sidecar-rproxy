@@ -1,0 +1,22 @@
+version: '3.1'
+services:
+
+  certbot:
+    container_name: certbot
+    build: ./df_certbot/
+    volumes:
+      - ./ini:/etc/cloudflare_api
+      - ./cert:/etc/certs 
+
+  rproxy_certbot:
+    container_name: nginx
+    build: ./df_nginx/
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - ./cert:/etc/certs
+    ports:
+    - 80:80
+    - 443:443
+    depends_on:
+      - certbot
+ 
