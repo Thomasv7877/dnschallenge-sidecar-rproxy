@@ -188,4 +188,5 @@ docker compose up
 # TODO
 
 meer info cloudflare api (rechten), print screens?  
-manueel ophalen via certbot cmd toevoegen? test arg toevoegen certbot cmd? dig cmd ter test txt record toevoegen?
+manueel ophalen via certbot cmd toevoegen? test arg toevoegen certbot cmd? dig cmd ter test txt record toevoegen?  
+misc docker cmd's (zoals shell toegang)?
